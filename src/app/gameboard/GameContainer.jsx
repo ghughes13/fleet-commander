@@ -1,11 +1,12 @@
 "use client";
 import { GameBoard } from "./Gameboard";
+import NoSsr from "./NoSsr";
 
 const GameContainer = () => {
   return (
-    <div className="w-full h-full flex justify-center">
+    <NoSsr>
       <GameBoard />
-    </div>
+    </NoSsr>
   );
 };
 

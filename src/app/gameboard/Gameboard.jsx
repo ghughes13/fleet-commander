@@ -1,15 +1,15 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 
-function getWindowDimensions() {
+const getWindowDimensions = () => {
   const { innerWidth: windowWidth, innerHeight: windowHeight } = window;
   return {
     windowWidth,
     windowHeight,
   };
-}
+};
 
-function useWindowDimensions() {
+const useWindowDimensions = () => {
   const [windowDimensions, setWindowDimensions] = useState(
     getWindowDimensions()
   );
@@ -24,7 +24,7 @@ function useWindowDimensions() {
   }, []);
 
   return windowDimensions;
-}
+};
 
 export const GameBoard = () => {
   const canvasRef = useRef();
