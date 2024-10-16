@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
+import { IGridProps, IHTMLCanvasElementExtension } from "./grid-board-types";
 
 const getWindowDimensions = () => {
   const { innerWidth: windowWidth, innerHeight: windowHeight } = window;
@@ -10,9 +11,7 @@ const getWindowDimensions = () => {
 };
 
 const useWindowDimensions = () => {
-  const [windowDimensions, setWindowDimensions] = useState(
-    getWindowDimensions()
-  );
+  const [windowDimensions, setWindowDimensions] = useState(getWindowDimensions());
 
   useEffect(() => {
     function handleResize() {
@@ -27,7 +26,7 @@ const useWindowDimensions = () => {
 };
 
 export const GameBoard = () => {
-  const canvasRef = useRef();
+  const canvasRef = useRef<IHTMLCanvasElementExtension>(null);
 
   const [gameExists, setGameExists] = useState(false);
   const { windowWidth, windowHeight } = useWindowDimensions();
@@ -35,8 +34,8 @@ export const GameBoard = () => {
   useEffect(() => {
     if (gameExists) return;
     const g = {
-      parseGridProps: function (grid) {
-        var a = {};
+      parseGridProps: function (grid: Partial<IGridProps>) {
+        const a: IGridProps = {} as IGridProps;
         a.width = grid.width || 64;
         a.height = grid.height || 16;
         a.cellSize = grid.cellSize || 64;
@@ -47,14 +46,14 @@ export const GameBoard = () => {
         a.cells = [];
         return a;
       },
-      createGridObject: function (w, h) {
+      createGridObject: function (width: number, height: number) {
         var a = g.parseGridProps({
-          width: w,
-          height: h,
+          width,
+          height,
         });
         return g.createClearCellGrid(a);
       },
-      createClearCellGrid: function (grid) {
+      createClearCellGrid: function (grid: Partial<IGridProps>) {
         var a = g.parseGridProps(grid);
 
         var i = 0,
@@ -73,7 +72,7 @@ export const GameBoard = () => {
         }
         return a;
       },
-      clampedOffsets: function (grid, canvas) {
+      clampedOffsets: function (grid: IGridProps, canvas: HTMLCanvasElement) {
         canvas = canvas || {
           width: 320,
           height: 120,
@@ -98,23 +97,23 @@ export const GameBoard = () => {
           yOffset: y,
         };
       },
-      get: (grid, x, y) => {
-        if (x < 0 || y < 0 || x >= grid.width || y >= grid.height) {
+      get: (grid: IGridProps, xCoordinate: number, yCoordinate: number) => {
+        if (xCoordinate < 0 || yCoordinate < 0 || xCoordinate >= grid.width || yCoordinate >= grid.height) {
           return {};
         }
-        return grid.cells[y * grid.width + x];
+        return grid.cells[yCoordinate * grid.width + xCoordinate];
       },
-      getCellPositionFromCanvasPoint: (grid, x, y) => {
+      getCellPositionFromCanvasPoint: (grid: IGridProps, xCoordinate: number, yCoordinate: number) => {
         return {
-          x: Math.floor((x - grid.xOffset) / grid.cellSize),
-          y: Math.floor((y - grid.yOffset) / grid.cellSize),
+          x: Math.floor((xCoordinate - grid.xOffset) / grid.cellSize),
+          y: Math.floor((yCoordinate - grid.yOffset) / grid.cellSize),
         };
       },
-      getCellFromCanvasPoint: (grid, x, y) => {
-        var pos = g.getCellPositionFromCanvasPoint(grid, x, y);
+      getCellFromCanvasPoint: (grid: IGridProps, xCoordinate: number, yCoordinate: number) => {
+        var pos = g.getCellPositionFromCanvasPoint(grid, xCoordinate, yCoordinate);
         return g.get(grid, pos.x, pos.y);
       },
-      getPointerMovementDeltas: (grid, canvas, px, py) => {
+      getPointerMovementDeltas: (grid: IGridProps, canvas: HTMLCanvasElement, px: number, py: number) => {
         var cx = canvas.width / 2,
           cy = canvas.height / 2,
           a = Math.atan2(py - cy, px - cx),
@@ -132,7 +131,7 @@ export const GameBoard = () => {
       },
     };
 
-    const drawMap = function (grid, ctx, canvas) {
+    const drawMap = function (grid: IGridProps, ctx: any, canvas: HTMLCanvasElement) {
       var colors = ["blue", "green"],
         cellSize = grid.cellSize || 10,
         x,
@@ -153,9 +152,9 @@ export const GameBoard = () => {
 
       if (grid.selectedCellIndex > -1) {
         ctx.strokeStyle = "red";
-        var cell = grid.cells[grid.selectedCellIndex],
-          x = cell.x * cellSize + xOffset,
-          y = cell.y * cellSize + yOffset;
+        const cell = grid.cells[grid.selectedCellIndex];
+        const x = cell.x * cellSize + xOffset;
+        const y = cell.y * cellSize + yOffset;
         ctx.strokeStyle = "red";
         ctx.lineWidth = 4;
         ctx.strokeRect(x, y, cellSize, cellSize);
@@ -164,8 +163,11 @@ export const GameBoard = () => {
 
     const utils = {
       createCanvas: function () {
-        const currentCanvas = canvasRef.current;
-        currentCanvas.ctx = currentCanvas.getContext("2d");
+        const currentCanvas = canvasRef.current as IHTMLCanvasElementExtension;
+        if (!currentCanvas) return;
+        const context = currentCanvas.getContext("2d");
+        if (!context) return;
+        currentCanvas.ctx = context;
         let ctx = currentCanvas.ctx;
 
         currentCanvas.width = currentCanvas.width || 320;
@@ -181,18 +183,16 @@ export const GameBoard = () => {
 
         return currentCanvas;
       },
-      getCanvasRelative: function (e) {
-        var canvas = e.target,
-          bx = canvas.getBoundingClientRect(),
-          pos = {
-            x:
-              (e.changedTouches ? e.changedTouches[0].clientX : e.clientX) -
-              bx.left,
-            y:
-              (e.changedTouches ? e.changedTouches[0].clientY : e.clientY) -
-              bx.top,
-            bx: bx,
-          };
+      getCanvasRelative: function (e: any) {
+        const canvas = e.target;
+        const bx = canvas.getBoundingClientRect();
+        const pos = {
+          x: (e.changedTouches ? e.changedTouches[0].clientX : e.clientX) - bx.left,
+          y: (e.changedTouches ? e.changedTouches[0].clientY : e.clientY) - bx.top,
+          bx: bx,
+        };
+
+        console.log(pos);
 
         pos.x = Math.floor((pos.x / canvas.scrollWidth) * canvas.width);
         pos.y = Math.floor((pos.y / canvas.scrollHeight) * canvas.height);
@@ -202,49 +202,51 @@ export const GameBoard = () => {
       },
     };
 
-    var canvasObj = utils.createCanvas(),
-      canvas = canvasRef.current,
-      ctx = canvasRef.current.ctx;
+    utils.createCanvas();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvasRef?.current?.ctx;
 
     var ratio = window.devicePixelRatio || 1;
 
-    var grid = g.createGridObject(100, 100);
+    var grid: IGridProps = g.createGridObject(100, 100);
     grid.xOffset = 1;
     grid.yOffset = 1;
 
-    var mousedown = false,
-      gridDelta = {
-        x: 0,
-        y: 0,
-      };
+    let mousedown = false;
+    const gridDelta = {
+      x: 0,
+      y: 0,
+    };
 
     const loop = function () {
       requestAnimationFrame(loop);
       grid.xOffset += gridDelta.x * ratio;
       grid.yOffset += gridDelta.y * ratio;
 
-      var offsets = g.clampedOffsets(grid, canvas, ratio);
+      var offsets = g.clampedOffsets(grid, canvas);
       grid.xOffset = offsets.xOffset;
       grid.yOffset = offsets.yOffset;
 
       ctx.fillStyle = "black";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      drawMap(grid, ctx, canvas, ratio);
+      drawMap(grid, ctx, canvas);
 
       ctx.fillStyle = "red";
       ctx.textBaseline = "top";
       ctx.textAlign = "left";
       ctx.font = "10px arial";
-      ctx.fillText("v" + grid.ver, 5, canvas.height - 15);
+      ctx.fillText("v" + grid, 5, canvas.height - 15);
     };
     loop();
 
     canvas.addEventListener("mousedown", function (e) {
-      var pos = utils.getCanvasRelative(e);
+      const pos = utils.getCanvasRelative(e);
       e.preventDefault();
       mousedown = true;
-      var cell = g.getCellFromCanvasPoint(grid, pos.x / ratio, pos.y / ratio);
+      const cell = g.getCellFromCanvasPoint(grid, pos.x / ratio, pos.y / ratio);
+      console.log(cell);
       if (cell.i === grid.selectedCellIndex) {
         grid.selectedCellIndex = -1;
       } else {
@@ -262,11 +264,12 @@ export const GameBoard = () => {
     });
 
     canvas.addEventListener("mousemove", function (e) {
-      var canvas = e.target,
-        bx = canvas.getBoundingClientRect(),
-        x = (e.clientX - bx.left) * ratio,
-        y = (e.clientY - bx.top) * ratio,
-        deltas = g.getPointerMovementDeltas(grid, canvas, x, y);
+      const canvas = e.target as HTMLCanvasElement;
+      if (!canvas) return;
+      const bx = canvas.getBoundingClientRect();
+      const x = (e.clientX - bx.left) * ratio;
+      const y = (e.clientY - bx.top) * ratio;
+      const deltas = g.getPointerMovementDeltas(grid, canvas, x, y);
       if (mousedown) {
         gridDelta.x = deltas.x;
         gridDelta.y = deltas.y;
@@ -278,9 +281,7 @@ export const GameBoard = () => {
 
   const cleanUp = () => {};
 
-  return (
-    <canvas ref={canvasRef} width={windowWidth} height={windowHeight}></canvas>
-  );
+  return <canvas ref={canvasRef} width={windowWidth} height={windowHeight} className="fixed left-0 top-0"></canvas>;
 };
 
 export default GameBoard;

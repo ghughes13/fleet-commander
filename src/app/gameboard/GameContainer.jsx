@@ -1,12 +1,13 @@
 "use client";
+import DropDownMenu from "@/components/DropDownMenu";
 import { GameBoard } from "./game-board";
 import NoSsr from "./NoSsr";
 
 const GameContainer = () => {
   return (
     <NoSsr>
-      {/* <div>HERE</div> */}
       <GameBoard />
+      <DropDownMenu />
     </NoSsr>
   );
 };
